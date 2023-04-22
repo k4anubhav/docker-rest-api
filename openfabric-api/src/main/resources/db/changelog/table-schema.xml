@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <!-- ############################################################ -->
+    <!--   DBMS SPECIFIC SETUP   -->
+    <!-- ############################################################ -->
+    <property name="uuid_type" value="CHAR(36)" dbms="postgresql"/>
+    <property name="uuid_type" value="uniqueidentifier" dbms="mssql"/>
+    <property name="uuid_type" value="RAW(16)" dbms="oracle"/>
+    <property name="uuid_function" value="uuid_generate_v4()" dbms="postgresql"/>
+    <property name="uuid_function" value="NEWID()" dbms="mssql"/>
+    <property name="uuid_function" value="sys_guid()" dbms="oracle"/>
+
+    <changeSet id="EXTENSION" author="andrei">
+        <sql>
+            CREATE
+            EXTENSION IF NOT EXISTS "uuid-ossp";
+        </sql>
+    </changeSet>
+    <changeSet id="SEQUENCE" author="andrei">
+        <sql>
+            CREATE SEQUENCE IF NOT EXISTS hibernate_sequence START 1;
+        </sql>
+    </changeSet>
+
+    <!-- ############################################################ -->
+    <!--  Worker  -->
+    <!-- ############################################################ -->
+    <changeSet id="WO_01" author="andrei">
+        <createTable tableName="worker" remarks="Worker table">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+            <column name="deleted_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="WO_02" author="anubhav">
+        <addColumn tableName="worker">
+            <column name="docker_id" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="command" type="varchar(255)"/>
+            <column name="created" type="DATETIME"/>
+            <column name="image" type="varchar(255)"/>
+            <column name="image_id" type="varchar(255)"/>
+            <column name="status" type="varchar(255)"/>
+            <column name="state" type="varchar(255)"/>
+
+            <column name="size_root_fs" type="bigint"/>
+            <column name="size_rw" type="bigint"/>
+            <column name="host_config_network_mode" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="WO_03" author="anubhav">
+        <createTable tableName="worker_port">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip" type="varchar(255)"/>
+            <column name="private_port" type="int"/>
+            <column name="public_port" type="int"/>
+            <column name="type" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="worker_port" baseColumnNames="worker_id"
+                                 constraintName="fk_worker_port_worker_id"
+                                 referencedTableName="worker" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_04" author="anubhav">
+        <createTable tableName="worker_label">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="varchar(255)"/>
+            <column name="value" type="varchar(255)"/>
+        </createTable>
+        <addUniqueConstraint tableName="worker_label" columnNames="worker_id, key"
+                             constraintName="uk_worker_label_worker_id_key" deferrable="true" initiallyDeferred="true"/>
+        <addForeignKeyConstraint baseTableName="worker_label" baseColumnNames="worker_id"
+                                 constraintName="fk_worker_label_worker_id"
+                                 referencedTableName="worker" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_05" author="anubhav">
+        <createTable tableName="worker_mount">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="name" type="varchar(255)"/>
+            <column name="source" type="varchar(255)"/>
+            <column name="destination" type="varchar(255)"/>
+            <column name="driver" type="varchar(255)"/>
+            <column name="mode" type="varchar(255)"/>
+            <column name="rw" type="boolean"/>
+            <column name="propagation" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="worker_mount" baseColumnNames="worker_id"
+                                 constraintName="fk_worker_mount_worker_id"
+                                 referencedTableName="worker" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_06" author="anubhav">
+        <createTable tableName="worker_name">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="name" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="worker_name" baseColumnNames="worker_id"
+                                 constraintName="fk_worker_name_worker_id"
+                                 referencedTableName="worker" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_07" author="anubhav">
+        <createTable tableName="worker_network">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="key" type="varchar(255)"/>
+            <column name="ip4address" type="varchar(255)"/>
+            <column name="ip6address" type="varchar(255)"/>
+            <column name="network_id" type="varchar(255)"/>
+            <column name="endpoint_id" type="varchar(255)"/>
+            <column name="gateway" type="varchar(255)"/>
+            <column name="ip_address" type="varchar(255)"/>
+            <column name="ip_prefix_len" type="int"/>
+            <column name="ipv6gateway" type="varchar(255)"/>
+            <column name="globalipv6address" type="varchar(255)"/>
+            <column name="globalipv6prefix_len" type="int"/>
+            <column name="mac_address" type="varchar(255)"/>
+        </createTable>
+        <addUniqueConstraint tableName="worker_network" columnNames="worker_id, key"
+                             constraintName="uk_worker_network_worker_id_key" deferrable="true"
+                             initiallyDeferred="true"/>
+        <addForeignKeyConstraint baseTableName="worker_network" baseColumnNames="worker_id"
+                                 constraintName="fk_worker_network_worker_id"
+                                 referencedTableName="worker" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_08" author="anubhav">
+        <createTable tableName="worker_network_link">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_network_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="name" type="varchar(255)"/>
+            <column name="alias" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="worker_network_link" baseColumnNames="worker_network_id"
+                                 constraintName="fk_worker_network_link_worker_network_id"
+                                 referencedTableName="worker_network" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_09" author="anubhav">
+        <createTable tableName="worker_network_alias">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_network_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="name" type="varchar(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="worker_network_alias" baseColumnNames="worker_network_id"
+                                 constraintName="fk_worker_network_alias_worker_network_id"
+                                 referencedTableName="worker_network" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="WO_10" author="anubhav">
+        <createTable tableName="worker_stats">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="worker_id" type="${uuid_type}">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="read" type="DATETIME"/>
+
+            <column name="memory_usage" type="bigint"/>
+            <column name="memory_max_usage" type="bigint"/>
+            <column name="memory_fail_cnt" type="bigint"/>
+            <column name="memory_limit" type="bigint"/>
+
+            <column name="cpu_system_cpu_usage" type="bigint"/>
+            <column name="cpu_online_cpus" type="bigint"/>
+
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

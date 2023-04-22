@@ -1,0 +1,63 @@
+# ===============================
+# = Spring configurations
+# ===============================
+spring:
+  name: base
+  # = HTTP requests configurations ##############################
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1000MB
+      location:     #TODO add it in extended profiles
+  # = JACKSON configurations #####################################
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+  # = JPA configurations #########################################
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: public
+        current_session_context_class: org.springframework.orm.hibernate5.SpringSessionContext
+    show-sql: false
+  # = SQL configurations #########################################
+  sql:
+    init:
+      platform: postgresql
+  # = DATASOURCE configurations ###################################
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url:            #TODO add it in extended profiles
+    username:       #TODO add it in extended profiles
+    password:       #TODO add it in extended profiles
+  # = LIQUIBASE configurations #########################################
+  liquibase:
+    change-log: classpath:db/liquibase-changelog.xml
+
+## ===============================
+## = ELIDE configurations
+## ===============================
+elide:
+  json-api:
+    path: /api/v1
+    enabled: true
+  graphql:
+    enabled: false
+  swagger:
+    enabled: false
+
+# ===============================
+# = LOG LEVEL
+# ===============================
+logging:
+  level.org.hibernate.SQL: debug
+
+# ===============================
+# = Configuration
+# ===============================
+node:
+  api:
+    path: /api/v1
